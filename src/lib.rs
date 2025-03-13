@@ -286,9 +286,10 @@ impl<'scope, 'env> ScopedTaskSpawner<'scope, 'env> {
         // SAFETY: The rest of this module makes sure to only deref the `Box` when we're certain
         // that the 'scope borrow is still live/valid.
         let fut = unsafe {
-            ManuallyDrop::new(Box::from_raw(
-                Box::into_raw(fut) as *mut (dyn Future<Output = ()> + Send + 'static)
-            ))
+            ManuallyDrop::new(Box::from_raw(std::mem::transmute::<
+                *mut (dyn Future<Output = ()> + Send + '_),
+                *mut (dyn Future<Output = ()> + Send + 'static),
+            >(Box::into_raw(fut))))
         };
         let _ = self.spawn_tx.send(fut);
 
